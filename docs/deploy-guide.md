@@ -93,8 +93,12 @@ curl -X POST http://127.0.0.1:8317/v1/images/generations \
 
 | Houya 环境变量 | 取值 |
 |---|---|
-| `OPENAI_BASE_URL` | `http://<VPS_IP>:8317/v1`（完成第 7 步加固后换成 `https://<域名>/v1`） |
+| `OPENAI_BASE_URL` | `https://<域名>/v1`（第 7 步 nginx 反代就绪后的正式地址） |
 | `OPENAI_API_KEY` | `config.yaml` 里 `api-keys` 的值 |
+
+> 8317 默认只绑本机回环（见 docker-compose.yml），对外必须走第 7 步的 nginx 443。
+> 如需在 nginx 就绪前用 `http://<VPS_IP>:8317/v1` 公网直连联调：临时把 compose 里的映射改回
+> `"8317:8317"`、安全组按来源 IP 放行 8317，联调完改回来。
 
 Houya 走标准 OpenAI Images API，随时可把这两个值切回官方 `https://api.openai.com/v1` + 官方 key 回退，代码零改动。
 
@@ -114,6 +118,11 @@ server {
     ssl_certificate_key /etc/letsencrypt/live/gateway.example.com/privkey.pem;
 
     location / {
+        # 可选：来源 IP 白名单（服务器上还有其他站点共用 443 时，安全组不能收紧，
+        # 就在这里做只针对本站点的访问控制；IP 以调用方实测出口 IP 为准）
+        # allow <调用方出口IP>;
+        # deny all;
+
         proxy_pass http://127.0.0.1:8317;
         proxy_http_version 1.1;
         proxy_set_header Host $host;

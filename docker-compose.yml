@@ -13,8 +13,9 @@ services:
     container_name: gpt-image-gateway
     restart: unless-stopped
     ports:
-      # OpenAI 兼容 API（对外服务端口，建议经 nginx/防火墙加固后暴露）
-      - "8317:8317"
+      # OpenAI 兼容 API。默认只绑本机回环，对外统一经 nginx 443 反代（见部署指南第 7 步）；
+      # 联调需要公网直连 8317 时，临时改回 "8317:8317" 并在安全组按来源 IP 放行
+      - "127.0.0.1:8317:8317"
       # Codex OAuth 回调，仅首次登录时使用；只绑定本机回环地址，
       # 配合 SSH 端口转发完成授权（见 docs/deploy-guide.md 第 4 步）
       - "127.0.0.1:1455:1455"
