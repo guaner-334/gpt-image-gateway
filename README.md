@@ -47,6 +47,8 @@ Houya 侧对接只依赖这两个值，走标准 OpenAI Images API：
 
 随时可以把这两个值切回官方 `https://api.openai.com/v1` + 官方 API key 回退，Houya 侧代码零改动。
 
+调用参数（size/quality/background 等字段、响应格式、SDK 示例、错误速查）见 **[docs/api-usage.md](docs/api-usage.md)**。
+
 ## 红线（务必遵守）
 
 - **`config.yaml`（含网关 API key）和 `auth/`（ChatGPT 订阅 OAuth 登录态）永不入库**，`.gitignore` 已覆盖，任何情况下不得移出。
@@ -70,6 +72,7 @@ Houya 侧对接只依赖这两个值，走标准 OpenAI Images API：
 ├── scripts/
 │   └── healthcheck.sh      健康检查（默认零成本，--full 真实生成）
 ├── docs/
-│   └── deploy-guide.md     完整部署指南
+│   ├── deploy-guide.md     完整部署指南
+│   └── api-usage.md        API 调用说明（Houya 对接用）
 └── CLAUDE.md               本仓项目规范
 ```
