@@ -135,14 +135,18 @@ sudo nginx -t && sudo systemctl reload nginx
 
 之后交付给 Houya 的 `OPENAI_BASE_URL` 改为 `https://gateway.example.com/v1`。
 
-### 7.2 防火墙（ufw 示例）
+### 7.2 访问控制（来源 IP 白名单）
 
-```bash
-sudo ufw allow OpenSSH
-sudo ufw allow 443/tcp
-sudo ufw deny 8317/tcp     # 8317 只经 nginx 访问，不对公网直开
-sudo ufw enable
-```
+**⚠️ 不要用 ufw 去挡 8317**：8317 是 Docker 发布的端口，Docker 会直接写 iptables（DOCKER 链），流量不经过 ufw 的常规规则——`ufw deny 8317` 看似生效，实际拦不住，是假安全感。
+
+正确做法，按优先级：
+
+1. **云安全组（推荐）**：在云控制台把 8317 入方向规则的源地址从 `0.0.0.0/0` 收紧为调用方的出口 IP（`x.x.x.x/32`）。拦截发生在云的网络层，Docker 绕不过去。
+   > 调用方的真实出口 IP 以在调用方服务器上执行 `curl -s ifconfig.me` 的结果为准——出网经过 NAT/代理时，出口 IP 和机器自身 IP 不一致，填错会把自己挡在外面。
+2. **配好 nginx 后收口**：把 docker-compose.yml 里 8317 的映射改成 `"127.0.0.1:8317:8317"`（先改仓库、再同步到服务器，勿手改），`docker compose up -d` 重建后 8317 彻底不对公网暴露，只剩 443 经 nginx 进来，安全组也只放行 443。
+3. 如果一定要在主机层做防火墙，规则必须写进 iptables 的 `DOCKER-USER` 链才对 Docker 端口生效，ufw 常规命令无效。
+
+SSH 防护照旧走 ufw 或安全组：`sudo ufw allow OpenSSH && sudo ufw enable`。
 
 > 1455 端口在 docker-compose.yml 里只绑定了 `127.0.0.1`，公网本来就摸不到，无需处理。
 
