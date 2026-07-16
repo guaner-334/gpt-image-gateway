@@ -1,0 +1,35 @@
+# GPT Image Gateway 配置模板
+#
+# 使用方法：
+#   cp config.example.yaml config.yaml
+#   然后修改 api-keys 为你自己的随机 key（生成方法：openssl rand -hex 32）
+#
+# 红线：config.yaml 含网关 API key，已被 .gitignore 忽略，永不入库。
+# 完整字段说明见上游文档：https://help.router-for.me/
+
+# 监听地址。容器内留空表示监听所有接口，
+# 实际对外暴露由 docker-compose 端口映射 + 防火墙/nginx 控制。
+host: ""
+
+# 服务端口（与 docker-compose.yml 中的映射保持一致）
+port: 8317
+
+# 网关自定义 API key，可配多个。
+# Houya 侧的 OPENAI_API_KEY 用的就是这里的值。
+api-keys:
+  - "replace-with-a-long-random-key"
+
+# OAuth 登录态目录（容器内路径，对应宿主机 ./auth，已被 .gitignore 忽略）。
+# Codex 登录成功后 token 存在这里，之后自动刷新，无需重复登录。
+auth-dir: "~/.cli-proxy-api"
+
+# 图像生成开关，保持 false（= 启用图像生成）。
+# false 时 /v1/images/generations 与 /v1/images/edits 可用。
+disable-image-generation: false
+
+# 远程管理 API。
+# 红线：allow-remote 保持 false（仅本机可访问管理端点）；
+# secret-key 留空则完全禁用管理 API（所有 /v0/management 路由返回 404）。
+remote-management:
+  allow-remote: false
+  secret-key: ""
