@@ -33,6 +33,7 @@
 | `config.example.yaml` | 配置模板；真实配置 `config.yaml` 只存在于服务器上 |
 | `scripts/healthcheck.sh` | 健康检查；默认零成本查 `/v1/models`，`--full` 真实生成 |
 | `docs/deploy-guide.md` | 完整部署指南；服务器上的一切操作以此为准 |
+| `docs/api-usage.md` | API 调用说明；参数以 CLIProxyAPI 源码核实为准，Houya 对接以此为准 |
 
 ## Commit 规范
 
