@@ -1,0 +1,24 @@
+# GPT Image Gateway —— 基于 CLIProxyAPI 的文生图网关
+#
+# 启动前先准备好 config.yaml（cp config.example.yaml config.yaml 并改 api-keys），
+# 完整步骤见 docs/deploy-guide.md。
+#
+# 注意：config.yaml 与 auth/ 含凭证，已被 .gitignore 忽略，永不入库。
+
+services:
+  gateway:
+    # 图像生成需 CLIProxyAPI >= v6.9.30（v6.9.35 起对所有 Codex 上游请求可用），
+    # 直接跟随 latest 即可
+    image: eceasy/cli-proxy-api:latest
+    container_name: gpt-image-gateway
+    restart: unless-stopped
+    ports:
+      # OpenAI 兼容 API（对外服务端口，建议经 nginx/防火墙加固后暴露）
+      - "8317:8317"
+      # Codex OAuth 回调，仅首次登录时使用；只绑定本机回环地址，
+      # 配合 SSH 端口转发完成授权（见 docs/deploy-guide.md 第 4 步）
+      - "127.0.0.1:1455:1455"
+    volumes:
+      - ./config.yaml:/CLIProxyAPI/config.yaml
+      - ./auth:/root/.cli-proxy-api
+      - ./logs:/CLIProxyAPI/logs

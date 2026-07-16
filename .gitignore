@@ -1,0 +1,15 @@
+# ===== 红线：凭证永不入库 =====
+# 网关配置（含自定义 API key）
+config.yaml
+# ChatGPT 订阅 OAuth 登录态
+auth/
+
+# 运行产物
+logs/
+tmp/
+*.png
+
+# 编辑器 / 系统文件
+.DS_Store
+.idea/
+.vscode/
