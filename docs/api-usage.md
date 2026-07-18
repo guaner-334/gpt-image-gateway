@@ -1,6 +1,6 @@
 # API 调用说明（Houya 对接用）
 
-网关暴露标准 **OpenAI Images API**，任何 OpenAI SDK / HTTP 客户端都能直接用。本文列出的参数已对照 CLIProxyAPI 源码（v7.2.80）逐一核实，是 `gpt-image-2` 路径**真实生效**的字段，不是照抄 OpenAI 官方文档。
+网关暴露标准 **OpenAI Images API**，任何 OpenAI SDK / HTTP 客户端都能直接用。本文列出的参数已对照 CLIProxyAPI 源码（v7.2.88；图像层与 v7.2.80 零差异）逐一核实，是 `gpt-image-2` 路径**真实生效**的字段，不是照抄 OpenAI 官方文档。
 
 ## 基本信息
 
@@ -29,7 +29,7 @@ curl -m 300 -X POST "$OPENAI_BASE_URL/images/generations" \
 | `prompt` | string | **是** | 图片描述；缺失直接返回 400 |
 | `size` | string | 否 | `1024x1024`（方）、`1536x1024`（横）、`1024x1536`（竖）、`auto`（默认，由模型自行决定） |
 | `quality` | string | 否 | `low` / `medium` / `high` / `auto`（默认）。越高越慢、耗额度越多 |
-| `background` | string | 否 | `transparent`（透明底，需配 png/webp）/ `opaque` / `auto`（默认） |
+| `background` | string | 否 | `opaque` / `auto`（默认）/ `transparent`（**仅 `gpt-image-1.5` 支持**，需配 png/webp；`gpt-image-2` 传 `transparent` 会被上游报错，见下方「透明背景」） |
 | `output_format` | string | 否 | `png`（默认）/ `jpeg` / `webp` |
 | `output_compression` | number | 否 | 0–100，仅对 jpeg/webp 生效的压缩率 |
 | `moderation` | string | 否 | `auto`（默认）/ `low`（放宽内容审核） |
@@ -37,6 +37,21 @@ curl -m 300 -X POST "$OPENAI_BASE_URL/images/generations" \
 | `stream` | bool | 否 | `true` 时走 SSE 流式返回中途预览图（配 `partial_images`: 0–3）；Houya 场景用不上，保持默认即可 |
 
 **不支持 `n` 参数**：网关的 Codex 路径不转发 `n`，一次请求固定返回 1 张图。要多张就并发/循环发多次请求（每张都独立消耗订阅额度）。
+
+### 透明背景（houya#1445 核实结论）
+
+`gpt-image-2`（含 `gpt-image-2-2026-04-21`）已在**模型侧**把 `transparent` 从 `background` 取值中移除，传了会被上游直接报错。这是模型能力回退，官方 `api.openai.com` 上行为相同，**与网关无关**：CLIProxyAPI 对该参数只做原样透传（自 2026-05-19 图像兼容层引入起从未缺失），图片字节也原样返回、不做重编码；v7.2.80–v7.2.88 转发逻辑零变更，上游仓库亦无相关待修 issue。等网关升级修复是等不来的。
+
+需要透明底时改用 `gpt-image-1.5`（官方 API 文档确认其支持 `transparent`），走同一网关、同一接口，仅换 `model`。放开业务侧开关前，先在服务器上实测一次确认 Codex 上游对 1.5 同样兑现：
+
+```bash
+curl -m 300 -X POST "$OPENAI_BASE_URL/images/generations" \
+  -H "Authorization: Bearer $OPENAI_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"model": "gpt-image-1.5", "prompt": "一枚简单的圆形图标", "background": "transparent", "output_format": "png"}'
+```
+
+判定标准：响应顶层的 `background` 字段回传上游实际采用的值，应为 `"transparent"`（网关会把上游元数据如实带回）；解码 `b64_json` 后的 PNG 应带 alpha 通道（`python3 -c "from PIL import Image; print(Image.open('out.png').mode)"` 输出 `RGBA`）。
 
 ## 响应格式
 
